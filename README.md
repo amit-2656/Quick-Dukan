@@ -15,10 +15,13 @@ smart-dukaan/
 └── README.md
 ```
 ## Images
+# Dashboard
 <img width="1900" height="918" alt="Screenshot 2026-06-30 132055" src="https://github.com/user-attachments/assets/1c6e5557-ccbb-4245-bc86-4c86f51dafe8" />
+# stock
+<img width="1862" height="822" alt="Screenshot 2026-06-30 132129" src="https://github.com/user-attachments/assets/5a29035f-0c12-418b-9e86-b666ee58d394" />
+
 
 ## Features
-
 - 📊 Dashboard — today's sales, total bills, low stock alerts
 - 🧾 Billing — build a cart, generate a bill, stock auto-deducts
 - 📦 Stock management — view products, add/delete items
