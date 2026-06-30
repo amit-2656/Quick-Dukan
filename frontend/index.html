@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Dukaan</title>
+<style>
+  :root {
+    --teal-50: #E1F5EE; --teal-100: #9FE1CB; --teal-400: #1D9E75; --teal-600: #0F6E56; --teal-800: #085041;
+    --cream: #FAF7F0;
+    --amber-50: #FAEEDA; --amber-400: #EF9F27; --amber-800: #633806;
+    --red-50: #FCEBEB; --red-400: #E24B4A; --red-800: #791F1F;
+    --green-50: #EAF3DE; --green-800: #27500A;
+    --text-primary: #2C2C2A; --text-secondary: #5F5E5A; --text-tertiary: #888780;
+    --border: #E5E1D6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+    background: var(--cream);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+  .topbar { background: var(--teal-600); color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; }
+  .topbar .sync-status { font-size: 12px; color: rgba(255,255,255,0.75); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #9FE1CB; }
+  .dot.saving { background: var(--amber-400); }
+  .dot.error { background: var(--red-400); }
+
+  .shell { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
+  .tabs { display: flex; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tabs button { flex: 1; min-width: 110px; padding: 13px 8px; border: none; background: transparent; font-size: 13px; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: inherit; }
+  .tabs button.active { color: var(--teal-600); border-bottom-color: var(--teal-400); font-weight: 600; }
+
+  .screen { display: none; padding: 20px 0 60px; }
+  .screen.active { display: block; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid var(--border); }
+  .stat-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-card .value { font-size: 24px; font-weight: 600; }
+  .stat-card .value.teal { color: var(--teal-600); }
+  .stat-card .value.red { color: var(--red-400); }
+
+  .alert-box { background: var(--amber-50); border: 1px solid var(--amber-400); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; }
+  .alert-box .alert-title { font-size: 14px; font-weight: 600; color: var(--amber-800); margin-bottom: 8px; display:flex; align-items:center; gap:6px; }
+  .alert-item { font-size: 13px; color: var(--amber-800); padding: 4px 0; display: flex; justify-content: space-between; }
+
+  .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 16px; margin-bottom: 16px; }
+
+  .product-list { display: flex; flex-direction: column; gap: 8px; }
+  .product-row { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .product-info { flex: 1; }
+  .product-name { font-size: 14px; font-weight: 600; }
+  .product-price { font-size: 12px; color: var(--text-secondary); }
+  .stock-badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+  .stock-ok { background: var(--green-50); color: var(--green-800); }
+  .stock-low { background: var(--amber-50); color: var(--amber-800); }
+  .stock-out { background: var(--red-50); color: var(--red-800); }
+  .del-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 16px; padding: 4px 8px; }
+  .del-btn:hover { color: var(--red-400); }
+
+  .input-group { margin-bottom: 14px; }
+  .input-group label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500; }
+  .input-group input, .input-group select { width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text-primary); font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--teal-400); }
+
+  .btn { padding: 11px 18px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; justify-content: center; font-weight: 600; font-family: inherit; }
+  .btn-primary { background: var(--teal-400); color: white; }
+  .btn-primary:hover { background: var(--teal-600); }
+  .btn-voice { background: var(--teal-50); color: var(--teal-800); border: 1px solid var(--teal-100); }
+  .btn-scan { background: #EEEDFE; color: #3C3489; border: 1px solid #AFA9EC; }
+  .btn-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 100px; }
+
+  .cart-items { margin: 14px 0; }
+  .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .cart-total { display: flex; justify-content: space-between; padding: 12px 0; font-size: 17px; font-weight: 700; border-top: 2px solid var(--border); margin-top: 4px; }
+
+  .voice-panel { background: var(--teal-50); border-radius: 12px; padding: 20px; text-align: center; margin: 14px 0; }
+  .voice-status { font-size: 14px; color: var(--teal-800); margin-bottom: 8px; }
+  .voice-wave { font-size: 32px; margin: 6px 0; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--teal-600); color: white; padding: 12px 24px; border-radius: 24px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .toast.show { opacity: 1; }
+  .toast.error-toast { background: var(--red-400); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); font-size: 14px; }
+  .loader { text-align: center; padding: 60px 20px; color: var(--text-secondary); font-size: 14px; }
+  .recent-bill-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .recent-bill-row:last-child { border-bottom: none; }
+
+  .config-banner { background: var(--red-50); border: 1px solid var(--red-400); color: var(--red-800); padding: 12px 16px; font-size: 13px; text-align: center; }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .tabs button { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="config-banner" class="config-banner" style="display:none;">
+  Could not connect to backend. Please check the server is running (<code id="api-url-display"></code>)
+</div>
+
+<div class="topbar">
+  <div class="brand"><span>🏪</span><span>Smart Dukaan</span></div>
+  <div class="sync-status">
+    <span class="dot" id="sync-dot"></span>
+    <span id="sync-text">Connecting...</span>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="tabs">
+    <button class="active" onclick="showScreen('dashboard', this)">📊 Dashboard</button>
+    <button onclick="showScreen('billing', this)">🧾 Billing</button>
+    <button onclick="showScreen('stock', this)">📦 Stock</button>
+    <button onclick="showScreen('add', this)">➕ Add Item</button>
+  </div>
+
+  <div id="screen-dashboard" class="screen active">
+    <div class="loader" id="dashboard-loader">Loading data...</div>
+    <div id="dashboard-content" style="display:none;">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Today's Sales</div><div class="value teal" id="today-sales">₹0</div></div>
+        <div class="stat-card"><div class="label">Bills Generated</div><div class="value" id="bill-count">0</div></div>
+        <div class="stat-card"><div class="label">Total products</div><div class="value" id="total-products">0</div></div>
+        <div class="stat-card"><div class="label">Low stock alert</div><div class="value red" id="low-stock-count">0</div></div>
+      </div>
+      <div id="alert-section" class="alert-box" style="display:none;">
+        <div class="alert-title">⚠️ Low Stock Alert</div>
+        <div id="alert-list"></div>
+      </div>
+      <div class="section-title">Recent bills</div>
+      <div class="card"><div id="recent-bills"><div class="empty-state">No bills yet.</div></div></div>
+    </div>
+  </div>
+
+  <div id="screen-billing" class="screen">
+    <div class="card">
+      <div class="input-group">
+        <label>Select a product</label>
+        <select id="bill-product"><option value="">— select a product —</option></select>
+      </div>
+      <div class="input-group">
+        <label>Quantity</label>
+        <input type="number" id="bill-qty" value="1" min="1">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-scan" onclick="simulateScan()">📷 Scan</button>
+        <button class="btn btn-voice" onclick="simulateVoice()">🎤 Speak</button>
+        <button class="btn btn-primary" onclick="addToCart()">➕ Add</button>
+      </div>
+      <div id="voice-panel" class="voice-panel" style="display:none;">
+        <div class="voice-wave">🎙️</div>
+        <div class="voice-status" id="voice-status">Listening...</div>
+      </div>
+      <div class="cart-items" id="cart-list"></div>
+      <div class="cart-total" id="cart-total" style="display:none;"><span>Total</span><span id="total-amount">₹0</span></div>
+      <button class="btn btn-primary" id="bill-btn" style="display:none; width:100%; margin-top:10px;" onclick="generateBill()">🧾 Generate Bill & Update Stock</button>
+    </div>
+  </div>
+
+  <div id="screen-stock" class="screen">
+    <div class="section-title">Stock status</div>
+    <div class="product-list" id="stock-list"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <div id="screen-add" class="screen">
+    <div class="card">
+      <div class="section-title">Add a new product</div>
+      <div class="input-group"><label>Product name</label><input type="text" id="new-name" placeholder="e.g. Tata Salt 1kg"></div>
+      <div class="form-row">
+        <div class="input-group"><label>Price (₹)</label><input type="number" id="new-price" placeholder="25"></div>
+        <div class="input-group"><label>Stock (qty)</label><input type="number" id="new-stock" placeholder="50"></div>
+      </div>
+      <div class="input-group"><label>Low stock alert (notify when below this qty)</label><input type="number" id="new-min" placeholder="10"></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="addProduct()">✓ Save Product</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SMART DUKAAN — Frontend
+// Connects to the backend API (Node.js + Express + SQLite).
+// If the backend is hosted elsewhere (Railway, Render, etc.),
+// update the API_BASE_URL below.
+// ============================================================
+const API_BASE_URL = 'http://localhost:3000/api';
+
+let products = [];
+let cart = [];
+let dashboardStats = null;
+let recentBills = [];
+
+document.getElementById('api-url-display').textContent = API_BASE_URL;
+
+// ---------- API helpers ----------
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE_URL}${path}`);
+  if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+  return res.json();
+}
+async function apiPost(path, body) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+  return res.json();
+}
+async function apiDelete(path) {
+  const res = await fetch(`${API_BASE_URL}${path}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+  return res.json();
+}
+
+// ---------- Init ----------
+async function init() {
+  setSyncStatus('connecting');
+  try {
+    await apiGet('/health');
+    setSyncStatus('connected');
+    document.getElementById('config-banner').style.display = 'none';
+  } catch (e) {
+    setSyncStatus('error');
+    document.getElementById('config-banner').style.display = 'block';
+    document.getElementById('dashboard-loader').textContent = 'Could not connect to backend. Please check the server is running.';
+    return;
+  }
+  await Promise.all([loadProducts(), loadStats()]);
+  document.getElementById('dashboard-loader').style.display = 'none';
+  document.getElementById('dashboard-content').style.display = 'block';
+  renderDashboard();
+  renderStock();
+  renderBillDropdown();
+}
+
+function setSyncStatus(status) {
+  const dot = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  if (status === 'connecting') { dot.className = 'dot saving'; text.textContent = 'Connecting...'; }
+  else if (status === 'connected') { dot.className = 'dot'; text.textContent = 'Backend se connected'; }
+  else if (status === 'saving') { dot.className = 'dot saving'; text.textContent = 'Saving...'; }
+  else { dot.className = 'dot error'; text.textContent = 'Connection error'; }
+}
+
+async function loadProducts() {
+  products = await apiGet('/products');
+}
+async function loadStats() {
+  dashboardStats = await apiGet('/stats');
+}
+
+// ---------- Navigation ----------
+function showScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'stock') refreshAndRenderStock();
+  if (name === 'billing') refreshAndRenderBilling();
+  if (name === 'dashboard') refreshAndRenderDashboard();
+}
+
+async function refreshAndRenderDashboard() {
+  try { await Promise.all([loadProducts(), loadStats()]); renderDashboard(); } catch (e) { showToast(e.message, true); }
+}
+async function refreshAndRenderStock() {
+  try { await loadProducts(); renderStock(); } catch (e) { showToast(e.message, true); }
+}
+async function refreshAndRenderBilling() {
+  try { await loadProducts(); renderBillDropdown(); } catch (e) { showToast(e.message, true); }
+}
+
+// ---------- Dashboard ----------
+function renderDashboard() {
+  if (!dashboardStats) return;
+  document.getElementById('today-sales').textContent = '₹' + (dashboardStats.todaySales || 0).toLocaleString('en-IN');
+  document.getElementById('bill-count').textContent = dashboardStats.todayBillCount || 0;
+  document.getElementById('total-products').textContent = dashboardStats.totalProducts || 0;
+  document.getElementById('low-stock-count').textContent = dashboardStats.lowStockCount || 0;
+
+  const alertSection = document.getElementById('alert-section');
+  const al = document.getElementById('alert-list');
+  if (!dashboardStats.lowStockItems || dashboardStats.lowStockItems.length === 0) {
+    alertSection.style.display = 'none';
+  } else {
+    alertSection.style.display = 'block';
+    al.innerHTML = dashboardStats.lowStockItems.map(p =>
+      `<div class="alert-item"><span>${escapeHtml(p.name)}</span><span>Only ${p.stock} left</span></div>`
+    ).join('');
+  }
+}
+
+// ---------- Stock ----------
+function renderStock() {
+  const list = document.getElementById('stock-list');
+  if (products.length === 0) {
+    list.innerHTML = '<div class="empty-state">No products yet. Add one from the "Add Item" tab.</div>';
+    return;
+  }
+  list.innerHTML = products.map(p => {
+    let badge = p.stock === 0
+      ? `<span class="stock-badge stock-out">Out of stock</span>`
+      : p.stock <= p.min_stock
+        ? `<span class="stock-badge stock-low">${p.stock} left</span>`
+        : `<span class="stock-badge stock-ok">${p.stock} units</span>`;
+    return `<div class="product-row">
+      <div class="product-info"><div class="product-name">${escapeHtml(p.name)}</div><div class="product-price">₹${p.price}</div></div>
+      ${badge}
+      <button class="del-btn" onclick="deleteProduct(${p.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteProduct(id) {
+  try {
+    await apiDelete(`/products/${id}`);
+    await loadProducts();
+    renderStock();
+    renderBillDropdown();
+    showToast('Product removed');
+  } catch (e) { showToast(e.message, true); }
+}
+
+// ---------- Billing ----------
+function renderBillDropdown() {
+  const sel = document.getElementById('bill-product');
+  const inStock = products.filter(p => p.stock > 0);
+  if (inStock.length === 0) { sel.innerHTML = '<option value="">No products available</option>'; return; }
+  sel.innerHTML = '<option value="">— select a product —</option>' +
+    inStock.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (₹${p.price})</option>`).join('');
+}
+
+function addToCart() {
+  const pid = parseInt(document.getElementById('bill-product').value);
+  const qty = parseInt(document.getElementById('bill-qty').value) || 1;
+  if (!pid) { showToast('Please select a product first'); return; }
+  const prod = products.find(p => p.id === pid);
+  if (!prod) return;
+  const alreadyInCart = cart.find(c => c.id === pid)?.qty || 0;
+  if (qty + alreadyInCart > prod.stock) { showToast('Not enough stock! Only ' + prod.stock + ' left', true); return; }
+  const existing = cart.find(c => c.id === pid);
+  if (existing) existing.qty += qty; else cart.push({ id: pid, name: prod.name, price: prod.price, qty });
+  renderCart();
+  showToast(prod.name + ' added to cart');
+}
+
+function renderCart() {
+  const cl = document.getElementById('cart-list');
+  if (cart.length === 0) {
+    cl.innerHTML = '';
+    document.getElementById('cart-total').style.display = 'none';
+    document.getElementById('bill-btn').style.display = 'none';
+    return;
+  }
+  let total = 0;
+  cl.innerHTML = cart.map(c => { const sub = c.price * c.qty; total += sub; return `<div class="cart-item"><span>${escapeHtml(c.name)} × ${c.qty}</span><span>₹${sub}</span></div>`; }).join('');
+  document.getElementById('total-amount').textContent = '₹' + total;
+  document.getElementById('cart-total').style.display = 'flex';
+  document.getElementById('bill-btn').style.display = 'flex';
+}
+
+async function generateBill() {
+  try {
+    const items = cart.map(c => ({ product_id: c.id, quantity: c.qty }));
+    const result = await apiPost('/bills', { items });
+    cart = [];
+    renderCart();
+    await Promise.all([loadProducts(), loadStats()]);
+    renderBillDropdown();
+    renderDashboard();
+    showToast('Bill generated! ₹' + result.total + ' — Stock updated');
+  } catch (e) { showToast(e.message, true); }
+}
+
+function simulateScan() {
+  const inStock = products.filter(p => p.stock > 0);
+  if (inStock.length === 0) { showToast('No products in stock'); return; }
+  const randomProduct = inStock[Math.floor(Math.random() * inStock.length)];
+  document.getElementById('bill-product').value = randomProduct.id;
+  showToast('Scanned: ' + randomProduct.name);
+}
+
+const voiceCommands = ["One Maggi please", "Two packets Parle-G", "One Tata Salt", "Three Maggi please"];
+let voiceIndex = 0;
+function simulateVoice() {
+  const panel = document.getElementById('voice-panel');
+  const status = document.getElementById('voice-status');
+  panel.style.display = 'block';
+  status.textContent = 'Listening...';
+  setTimeout(() => {
+    const cmd = voiceCommands[voiceIndex % voiceCommands.length];
+    status.textContent = '"' + cmd + '"';
+    voiceIndex++;
+    setTimeout(() => {
+      panel.style.display = 'none';
+      const maggi = products.find(p => p.name.includes('Maggi'));
+      const parle = products.find(p => p.name.includes('Parle'));
+      const salt = products.find(p => p.name.includes('Salt'));
+      let picked = maggi, qty = 1;
+      if (cmd.includes('Parle-G')) { picked = parle; qty = 2; }
+      else if (cmd.includes('Tata Salt')) { picked = salt; qty = 1; }
+      else if (cmd.includes('Three')) qty = 3;
+      else if (cmd.includes('Two')) qty = 2;
+      if (picked) {
+        document.getElementById('bill-product').value = picked.id;
+        document.getElementById('bill-qty').value = qty;
+        showToast('Heard: ' + picked.name + ' × ' + qty);
+      }
+    }, 1400);
+  }, 900);
+}
+
+// ---------- Add product ----------
+async function addProduct() {
+  const name = document.getElementById('new-name').value.trim();
+  const price = parseFloat(document.getElementById('new-price').value);
+  const stock = parseInt(document.getElementById('new-stock').value);
+  const min_stock = parseInt(document.getElementById('new-min').value) || 10;
+  if (!name || !price || isNaN(stock)) { showToast('Please fill in all details'); return; }
+  try {
+    await apiPost('/products', { name, price, stock, min_stock });
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-price').value = '';
+    document.getElementById('new-stock').value = '';
+    document.getElementById('new-min').value = '';
+    await loadProducts();
+    renderStock();
+    renderBillDropdown();
+    showToast(name + ' added successfully!');
+  } catch (e) { showToast(e.message, true); }
+}
+
+// ---------- Utilities ----------
+function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error-toast' : '');
+  setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+
+init();
+</script>
+</body>
+</html>
