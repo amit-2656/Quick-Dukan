@@ -14,6 +14,8 @@ smart-dukaan/
 │   └── index.html
 └── README.md
 ```
+## Images
+<img width="1900" height="918" alt="Screenshot 2026-06-30 132055" src="https://github.com/user-attachments/assets/1c6e5557-ccbb-4245-bc86-4c86f51dafe8" />
 
 ## Features
 
